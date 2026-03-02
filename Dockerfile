@@ -26,10 +26,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 WORKDIR /app/frontend
 COPY --from=frontend-builder /app/frontend/build ./build
 
-# Create startup script that works with Railway
-WORKDIR /app
-RUN echo '#!/bin/bash\nset -e\necho "Starting services..."\ncd /app/backend\npython3 -m uvicorn app.main:app --host 0.0.0.0 --port 7777 2>&1 &\nBACK_PID=$!\nsleep 4\necho "Backend started (PID: $BACK_PID)"\ncd /app/frontend\nexec python3 server.py 3001' > /app/start.sh && chmod +x /app/start.sh
+# Copy startup script
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 
 EXPOSE 3001 7777
 
+WORKDIR /app
 CMD ["/app/start.sh"]
