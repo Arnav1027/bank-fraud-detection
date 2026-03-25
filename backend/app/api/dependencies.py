@@ -85,6 +85,52 @@ async def get_current_user(
     return user
 
 
+async def get_current_user_optional(
+    authorization: Optional[str] = Header(None, alias="authorization"),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    """Get current authenticated user from JWT token, or None if no token provided (demo mode)."""
+    if not authorization:
+        return None
+    
+    try:
+        # Extract token from "Bearer <token>"
+        parts = authorization.split()
+        
+        if len(parts) != 2:
+            return None
+            
+        scheme, token = parts
+        if scheme.lower() != "bearer":
+            return None
+        
+        payload = decode_token(token)
+        
+        if payload is None:
+            return None
+    except Exception:
+        return None
+
+    user_id: int = payload.get("sub")
+    if user_id is None:
+        return None
+    
+    # Convert to int if it's a string
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return None
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        return None
+
+    if not user.is_active:
+        return None
+
+    return user
+
+
 async def get_admin_user(
     current_user: User = Depends(get_current_user),
 ) -> User:

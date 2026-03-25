@@ -76,7 +76,7 @@ class ReactSPAHandler(SimpleHTTPRequestHandler):
         """Proxy API request to backend server."""
         try:
             # Get backend URL from environment
-            backend_port = int(os.environ.get('BACKEND_PORT', '8001'))
+            backend_port = int(os.environ.get('BACKEND_PORT', '7777'))
             backend_url = f'http://localhost:{backend_port}{path}'
             
             # Read request body if present
@@ -85,9 +85,16 @@ class ReactSPAHandler(SimpleHTTPRequestHandler):
             if content_length:
                 body = self.rfile.read(int(content_length))
             
-            # Make request to backend
-            headers = dict(self.headers)
-            headers.pop('Host', None)  # Remove Host header
+            # Make request to backend - preserve all headers except Host
+            headers = {}
+            for key, value in self.headers.items():
+                if key.lower() not in ['host', 'connection']:
+                    headers[key] = value
+            
+            # Ensure Authorization header is present
+            auth_header = self.headers.get('Authorization') or self.headers.get('authorization')
+            if auth_header:
+                headers['Authorization'] = auth_header
             
             if method == 'POST':
                 response = requests.post(backend_url, data=body, headers=headers, timeout=30)

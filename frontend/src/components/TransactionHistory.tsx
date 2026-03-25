@@ -42,8 +42,11 @@ export function TransactionHistory() {
       }
 
       const response = await apiClient.listTransactions(params);
-      setTransactions(response.data.items);
+      console.log('Transaction response:', response);
+      const items = response?.items || response || [];
+      setTransactions(Array.isArray(items) ? items : []);
     } catch (err: any) {
+      console.error('Transaction fetch error:', err);
       setError(err.message || 'Failed to load transactions');
     } finally {
       setLoading(false);

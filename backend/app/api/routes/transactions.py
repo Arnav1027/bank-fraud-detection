@@ -16,9 +16,10 @@ from app.schemas import (
     TransactionResponse,
     TransactionListResponse,
 )
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_current_user_optional
 from app.services.fraud_detector import get_fraud_detector
 from app.services.transaction_service import TransactionService
+from app.core.security import get_password_hash
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -92,7 +93,7 @@ def list_transactions(
     end_date: Optional[datetime] = Query(None),
     min_amount: Optional[float] = Query(None, ge=0),
     max_amount: Optional[float] = Query(None, ge=0),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     """
@@ -104,6 +105,23 @@ def list_transactions(
     - start_date, end_date: Filter by timestamp range
     - min_amount, max_amount: Filter by amount range
     """
+    # In demo mode (no auth), get test user; otherwise use current_user
+    if not current_user:
+        test_user = db.query(User).filter(User.email == "demo@test.com").first()
+        if not test_user:
+            from app.core.security import get_password_hash
+            test_user = User(
+                email="demo@test.com",
+                full_name="Demo User",
+                hashed_password=get_password_hash("demo"),
+                is_active=True,
+                role="analyst"
+            )
+            db.add(test_user)
+            db.commit()
+            db.refresh(test_user)
+        current_user = test_user
+    
     transactions, total = TransactionService.list_transactions(
         db=db,
         skip=skip,

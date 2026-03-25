@@ -8,7 +8,8 @@ from datetime import datetime
 from app.db.session import get_db
 from app.models import User
 from app.schemas import AnalyticsSummaryResponse, FraudSummary, FraudAlert
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_current_user_optional
+from app.core.security import get_password_hash
 from app.services.transaction_service import TransactionService
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -17,7 +18,7 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 @router.get("/summary", response_model=AnalyticsSummaryResponse)
 def get_summary(
     days: int = Query(7, ge=1, le=90),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     """
@@ -25,6 +26,22 @@ def get_summary(
 
     - days: Number of days to analyze (default: 7)
     """
+    # In demo mode (no auth), get test user or create one
+    if not current_user:
+        test_user = db.query(User).filter(User.email == "demo@test.com").first()
+        if not test_user:
+            test_user = User(
+                email="demo@test.com",
+                full_name="Demo User",
+                hashed_password=get_password_hash("demo"),
+                is_active=True,
+                role="analyst"
+            )
+            db.add(test_user)
+            db.commit()
+            db.refresh(test_user)
+        current_user = test_user
+    
     # Get fraud statistics
     stats = TransactionService.get_fraud_statistics(db, days=days)
 
@@ -65,7 +82,7 @@ def get_summary(
 def get_alerts(
     limit: int = Query(20, ge=1, le=100),
     min_fraud_score: float = Query(0.8, ge=0.0, le=1.0),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     """
@@ -98,7 +115,7 @@ def get_alerts(
 
 @router.get("/metrics")
 def get_metrics(
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     """Get model performance metrics (placeholder for trained model)."""
     # These would be loaded from model evaluation results
