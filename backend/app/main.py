@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
-from app.db.session import engine, get_db
+from app.db.session import engine, SessionLocal
 from app.models import Base, User
 from app.core.security import get_password_hash
 
@@ -21,8 +21,9 @@ async def lifespan(app: FastAPI):
     print("Starting up Bank Fraud Detection API...")
     
     # Create default test user if it doesn't exist
+    db = None
     try:
-        db = next(get_db())
+        db = SessionLocal()
         existing_user = db.query(User).filter(User.email == "demo@test.com").first()
         if not existing_user:
             print("Creating default test user: demo@test.com")
@@ -38,9 +39,13 @@ async def lifespan(app: FastAPI):
             print("✅ Test user created successfully!")
         else:
             print("✅ Test user already exists")
-        db.close()
     except Exception as e:
         print(f"⚠️  Could not create test user: {e}")
+        if db:
+            db.rollback()
+    finally:
+        if db:
+            db.close()
     
     yield
     # Shutdown

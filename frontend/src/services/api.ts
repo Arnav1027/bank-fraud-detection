@@ -51,8 +51,9 @@ class ApiClient {
       password,
       full_name: fullName,
     });
-    this.setToken(response.data.access_token);
-    return response.data;
+    const data = response.data;
+    this.setToken(data.access_token);
+    return data;
   }
 
   async login(email: string, password: string) {
@@ -71,36 +72,43 @@ class ApiClient {
 
   // Transaction endpoints
   async checkFraud(fraudCheckRequest: any) {
-    return this.client.post('/transactions/check', fraudCheckRequest);
+    const response = await this.client.post('/transactions/check', fraudCheckRequest);
+    return response.data;
   }
 
   async listTransactions(params: any = {}) {
-    return this.client.get('/transactions/', { params });
+    const response = await this.client.get('/transactions/', { params });
+    return response.data;
   }
 
   async getTransaction(id: number) {
-    return this.client.get(`/transactions/${id}`);
+    const response = await this.client.get(`/transactions/${id}`);
+    return response.data;
   }
 
   async batchCheckFraud(file: File) {
     const formData = new FormData();
     formData.append('file', file);
-    return this.client.post('/transactions/batch', formData, {
+    const response = await this.client.post('/transactions/batch', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return response.data;
   }
 
   // Analytics endpoints
   async getSummary(days = 7) {
-    return this.client.get('/analytics/summary', { params: { days } });
+    const response = await this.client.get('/analytics/summary', { params: { days } });
+    return response.data;
   }
 
   async getAlerts(limit = 20) {
-    return this.client.get('/analytics/alerts', { params: { limit } });
+    const response = await this.client.get('/analytics/alerts', { params: { limit } });
+    return response.data;
   }
 
   async getMetrics() {
-    return this.client.get('/analytics/metrics');
+    const response = await this.client.get('/analytics/metrics');
+    return response.data;
   }
 
   // Helper methods

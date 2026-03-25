@@ -25,8 +25,14 @@ class Settings(BaseSettings):
     PREPROCESSING_PATH: str = "./app/ml/models/preprocessor.joblib"
     FRAUD_THRESHOLD: float = 0.5
     
-    # CORS - Allow all origins in production (Railway will have dynamic domain)
-    CORS_ORIGINS: list = ["*"]
+    # CORS - Allow frontend and local development
+    CORS_ORIGINS: list = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:8000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:8000",
+    ]
     
     # Rate Limiting
     RATE_LIMIT_ENABLED: bool = True

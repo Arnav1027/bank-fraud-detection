@@ -1,4 +1,4 @@
-"""Frontend type definitions."""
+// Frontend type definitions
 
 export interface User {
   id: number;

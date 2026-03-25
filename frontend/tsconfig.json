@@ -1,5 +1,3 @@
-"""TSConfig for TypeScript."""
-
 {
   "compilerOptions": {
     "target": "ES2020",
@@ -29,5 +27,5 @@
     }
   },
   "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "exclude": ["node_modules"]
 }
