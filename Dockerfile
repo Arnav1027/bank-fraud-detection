@@ -9,9 +9,10 @@ COPY frontend/tsconfig.json ./
 COPY frontend/tailwind.config.js ./
 COPY frontend/postcss.config.js ./
 COPY frontend/.prettierrc ./
+ENV REACT_APP_API_URL=/api/v1
 RUN npm run build
 
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -30,7 +31,7 @@ COPY --from=frontend-builder /app/frontend/build ./build
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-EXPOSE 3001 7777
+EXPOSE 8000 8001
 
 WORKDIR /app
 CMD ["/app/start.sh"]

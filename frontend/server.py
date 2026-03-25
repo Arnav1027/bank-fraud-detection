@@ -64,14 +64,17 @@ def main():
     build_dir = script_dir / 'build'
     os.chdir(build_dir)
     
-    # Get port from argument or default to 3001
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 3001
+    # Get port from argument or use PORT env var or default to 3001
+    if len(sys.argv) > 1:
+        port = int(sys.argv[1])
+    else:
+        port = int(os.environ.get('PORT', 3001))
     
-    # Start server
-    server_address = ('127.0.0.1', port)
+    # Listen on all interfaces (needed for Docker/Railway)
+    server_address = ('0.0.0.0', port)
     httpd = HTTPServer(server_address, ReactSPAHandler)
     
-    print(f'✅ Server started at http://127.0.0.1:{port}')
+    print(f'✅ Server started at http://0.0.0.0:{port}')
     print(f'📁 Serving from: {build_dir}')
     print('🔄 Routes → index.html (React Router handles them)')
     print('📁 Static files → served directly\n')
