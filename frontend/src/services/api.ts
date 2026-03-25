@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:7777/api/v1';
+// Use relative path in production, localhost in development
+const API_URL = process.env.REACT_APP_API_URL || 
+  (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:7777/api/v1');
 
 interface ApiConfig {
   baseURL: string;
