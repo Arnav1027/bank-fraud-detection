@@ -50,15 +50,32 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(credentials: UserLogin, db: Session = Depends(get_db)):
-    """Authenticate user and return JWT token."""
+    """Demo mode: Authenticate user and return JWT token. Creates user if doesn't exist."""
     # Find user by email
     user = db.query(User).filter(User.email == credentials.email).first()
 
-    if not user or not verify_password(credentials.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
-        )
+    # If user doesn't exist, create them (demo mode)
+    if not user:
+        print(f"Demo mode: Creating new user for {credentials.email}")
+        try:
+            user = User(
+                email=credentials.email,
+                full_name=credentials.email.split("@")[0],  # Use email prefix as name
+                hashed_password=get_password_hash(credentials.password),
+                role="analyst",
+                is_active=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            print(f"✅ User created: {user.email}")
+        except Exception as e:
+            print(f"❌ Error creating user: {e}")
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not create user",
+            )
 
     if not user.is_active:
         raise HTTPException(
@@ -66,7 +83,7 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
             detail="User account is inactive",
         )
 
-    # Create access token
+    # Create access token (no password verification in demo mode)
     access_token = create_access_token(data={"sub": user.id})
 
     return {
