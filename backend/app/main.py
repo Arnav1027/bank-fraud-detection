@@ -24,23 +24,36 @@ async def lifespan(app: FastAPI):
     db = None
     try:
         db = SessionLocal()
+        print("Database connected successfully")
+        
         existing_user = db.query(User).filter(User.email == "demo@test.com").first()
         if not existing_user:
             print("Creating default test user: demo@test.com")
-            test_user = User(
-                email="demo@test.com",
-                full_name="Demo User",
-                hashed_password=get_password_hash("SecureTest2026!"),
-                role="analyst",
-                is_active=True,
-            )
-            db.add(test_user)
-            db.commit()
-            print("✅ Test user created successfully!")
+            try:
+                hashed_pwd = get_password_hash("SecureTest2026!")
+                print(f"Password hashed successfully")
+                
+                test_user = User(
+                    email="demo@test.com",
+                    full_name="Demo User",
+                    hashed_password=hashed_pwd,
+                    role="analyst",
+                    is_active=True,
+                )
+                db.add(test_user)
+                db.commit()
+                db.refresh(test_user)
+                print(f"✅ Test user created successfully! User ID: {test_user.id}")
+            except Exception as hash_error:
+                print(f"❌ Error creating test user: {hash_error}")
+                db.rollback()
+                raise
         else:
-            print("✅ Test user already exists")
+            print(f"✅ Test user already exists (ID: {existing_user.id})")
     except Exception as e:
         print(f"⚠️  Could not create test user: {e}")
+        import traceback
+        traceback.print_exc()
         if db:
             db.rollback()
     finally:
@@ -73,6 +86,30 @@ app.add_middleware(
 def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "bank-fraud-detection"}
+
+
+@app.get("/debug/check-user")
+def check_test_user():
+    """Debug endpoint to check if test user exists."""
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == "demo@test.com").first()
+        if user:
+            return {
+                "exists": True,
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "is_active": user.is_active,
+                "message": "Test user found!"
+            }
+        else:
+            return {
+                "exists": False,
+                "message": "Test user NOT found - login will fail"
+            }
+    finally:
+        db.close()
 
 
 # Include routers (imported after app creation to avoid circular imports)
